@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product details | Douglas</title>
+    <link rel="stylesheet" href="./assets/css/output.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <header class="h-20 bg-white border-b border-gray-200">
+        <div class="container mx-auto h-20 flex justify-between items-center px-4">
+            <img src="./assets/images/logo.svg" alt="logo" class="h-10 w-auto">
+            <nav>
+                <ul class="flex gap-4 items-center">
+                    <li><a href="index.html" class="font-semibold font-sans text-green-400">Home</a></li>
+                    <li><a href="products.html" class="font-semibold font-sans text-green-400">Products</a></li>
+                    <li><a href="cart.html" class="font-semibold font-sans text-green-400">Cart (<span id="cart">0</span>)</a></li>
+                    <li data-visible="auth"><a href="dashboard.html"  class="font-semibold font-sans text-green-400">Dashboard</a></li>
+                    <li data-visible="guest"><a href="login.html"  class="font-semibold font-sans text-green-400">Login</a></li>
+                    <li data-visible="guest"><a href="register.html"  class="font-semibold font-sans text-green-400">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="py-12">
+        <div class="container mx-auto">
+            <div class="grid grid-cols-2 gap-12" id="product"></div>
+        </div>
+    </section>
+
+    <footer class="h-20 bg-white border-t border-gray-200">
+        <div class="container mx-auto flex items-center justify-between">
+            <p>&copy; 2025 Parfümerie Douglas GmbH & Co. KG.</p>
+        </div>        
+    </footer>
+
+    <script src="assets/js/dynamicListener.js"></script>
+    <script>
+        const user = localStorage.getItem('user');
+        const cart = localStorage.getItem('cart') !== null ? JSON.parse(localStorage.getItem('cart')) : [];
+
+        document.querySelector('#cart').textContent = cart.length
+
+        if(user !== null) {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'block'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'none'
+            }
+        } else {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'none'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'block'
+            }
+        }
+
+        //Marrja e id nga URL
+        const id = new URLSearchParams(location.search).get('id');
+        if (!id) {
+            location.href = 'products.html';
+        } else {
+            const API = `https://makeup-api.herokuapp.com/api/v1/products/${encodeURIComponent(id)}.json`;
+            const box = document.querySelector('#product');
+
+            fetch(API)
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(data => {
+                const prod = Array.isArray(data) ? data[0] : data;
+                if (!prod) throw new Error('not_found');
+
+                // ruaj produktin per add-to-cart
+                localStorage.setItem('prod', JSON.stringify(prod));
+
+                const img = (typeof prod.image_link === 'string' && prod.image_link.trim() && prod.image_link.trim().toLowerCase() !== 'null')
+                ? prod.image_link
+                : 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+
+                // ⚠️ MBYLL p dhe form
+                box.innerHTML = `
+                <div class="bg-gray-100 rounded-xl p-6 flex items-center justify-center">
+                    <img src="${img}" alt="${prod.name || ''}" class="max-w-full max-h-[480px] object-contain">
+                </div>
+                <div>
+                    <h1 class="mt-4 text-2xl font-bold">${prod.name || 'Product'}</h1>
+                    <p class="mt-4 text-gray-700 leading-relaxed">
+                    ${(prod.description || '').replace(/\s+/g,' ').trim()}
+                    </p>
+                    <form class="mt-6 flex gap-4 items-center" id="add-to-cart-form">
+                    <input type="number" name="qty" min="1" max="100" value="1"
+                            class="border border-gray-400 text-gray-800 px-4 py-2" />
+                    <!-- mund të jetë submit, sepse do ta kapim me 'submit' listener -->
+                    <button type="submit"
+                            class="bg-gray-700 text-gray-100 px-4 py-2 transition-all duration-300 ease-in-out hover:bg-gray-900 cursor-pointer">
+                        Add to cart
+                    </button>
+                    </form>
+                </div>
+                `;
+            })
+            .catch(err => {
+                console.error(err);
+                box.innerHTML = '<p class="text-red-600">S’u gjet produkti ose ndodhi një gabim.</p>';
+            });
+        }
+
+        // ✅ Kap SUBMIT per formen dinamike (delegation) dhe ndalo navigimin
+        document.addEventListener('submit', function (e) {
+            if (!e.target.matches('#add-to-cart-form')) return;
+            e.preventDefault();
+
+            const form = e.target;
+            const qty = parseInt(form.querySelector('[name="qty"]').value, 10) || 1;
+
+            const prod = JSON.parse(localStorage.getItem('prod') || 'null');
+            if (!prod) {
+            alert('S’po gjej produktin. Rifresko faqen ose provo përsëri.');
+            return;
+            }
+
+            // normalizo ID (API perdor 'id')
+            const prodId = prod.id ?? prod.idProd ?? prod.product_id;
+            const name = prod.name || 'Product';
+
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+            // lype sipas id (mbulo si 'id' ashtu edhe 'idProd')
+            const idx = cart.findIndex(item => String(item.id ?? item.idProd) === String(prodId));
+
+            if (idx > -1) {
+            cart[idx].qty = (parseInt(cart[idx].qty, 10) || 0) + qty;
+            } else {
+            // ruaje me 'id' me API
+            const itemToSave = { ...prod, id: prodId, qty };
+            delete itemToSave.idProd; // hjeki emertimet e vjetra nese ekzistojne
+            cart.push(itemToSave);
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+           // const totalQty = cart.reduce((sum, item) => sum + (parseInt(item.qty, 10) || 0), 0);
+            //document.querySelector('#cart').textContent = totalQty;
+            document.querySelector('#cart').textContent = cart.length;
+
+
+            alert(`${name} u shtua në shportë`);
+        });
+
+    </script>
+</body>
+</html>

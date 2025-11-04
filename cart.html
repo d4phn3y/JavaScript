@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart | Douglas</title>
+    <link rel="stylesheet" href="./assets/css/output.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <header class="h-20 bg-white border-b border-gray-200">
+        <div class="container mx-auto h-20 flex justify-between items-center px-4">
+            <img src="./assets/images/logo.svg" alt="logo" class="h-10 w-auto">
+            <nav>
+                <ul class="flex gap-4 items-center">
+                    <li><a href="index.html" class="font-semibold font-sans text-green-400">Home</a></li>
+                    <li><a href="products.html" class="font-semibold font-sans text-green-400">Products</a></li>
+                    <li><a href="cart.html" class="font-semibold font-sans text-green-400">Cart (<span id="cart">0</span>)</a></li>
+                    <li data-visible="auth"><a href="dashboard.html"  class="font-semibold font-sans text-green-400">Dashboard</a></li>
+                    <li data-visible="guest"><a href="login.html"  class="font-semibold font-sans text-green-400">Login</a></li>
+                    <li data-visible="guest"><a href="register.html"  class="font-semibold font-sans text-green-400">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="py-12">
+        <div class="container mx-auto">
+            <div class="grid grid-cols-2 gap-12" id="product"></div>
+        </div>
+    </section>
+
+    <footer class="h-20 bg-white border-t border-gray-200">
+        <div class="container mx-auto flex items-center justify-between">
+            <p>&copy; 2025 Parfümerie Douglas GmbH & Co. KG.</p>
+        </div>        
+    </footer>
+
+    <script src="assets/js/dynamicListener.js"></script>
+    <script>
+        const user = localStorage.getItem('user');
+        const cart = localStorage.getItem('cart') !== null ? JSON.parse(localStorage.getItem('cart')) : [];
+
+        document.querySelector('#cart').textContent = cart.length
+
+        if(user !== null) {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'block'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'none'
+            }
+        } else {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'none'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'block'
+            }
+        }
+
+        
+    </script>
+</body>
+</html>

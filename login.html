@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Douglas</title>
+    <link rel="stylesheet" href="./assets/css/output.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <header class="h-20 bg-white border-b border-gray-200">
+        <div class="container mx-auto h-20 flex justify-between items-center px-4">
+            <img src="./assets/images/logo.svg" alt="logo" class="h-10 w-auto">
+            <nav>
+                <ul class="flex gap-4 items-center">
+                    <li><a href="index.html" class="font-semibold font-sans text-green-400">Home</a></li>
+                    <li><a href="products.html" class="font-semibold font-sans text-green-400">Products</a></li>
+                    <li><a href="cart.html" class="font-semibold font-sans text-green-400">Cart (<span id="cart">0</span>)</a></li>
+                    <li data-visible="auth"><a href="dashboard.html"  class="font-semibold font-sans text-green-400">Dashboard</a></li>
+                    <li data-visible="guest"><a href="login.html"  class="font-semibold font-sans text-green-400">Login</a></li>
+                    <li data-visible="guest"><a href="register.html"  class="font-semibold font-sans text-green-400">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="py-12 px-6">
+        <div class="container mx-auto">
+            <h1 class="text-3xl mb-8 text-green-600">Login</h1>
+            <form action="#" id="login-form">
+                <div class="mb-4">
+                    <label class="text-gray-700 dark:text-gray-700" for="email">Email Address</label>
+                    <input id="email" required name="email" type="email" class="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-200 rounded-md  dark:text-gray-700 dark:border-gray-600 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 dark:focus:border-blue-300 focus:outline-none focus:ring">
+                </div>
+                <div class="mb-4">
+                    <label class="text-gray-700 dark:text-gray-700" for="password">Password</label>
+                    <input id="password" required name="password" type="password" class="block w-full px-4 py-2 mt-2 text-gray-700 bg-white border border-gray-200 rounded-md  dark:text-gray-700 dark:border-gray-600 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 dark:focus:border-blue-300 focus:outline-none focus:ring">
+                </div>
+                <button class="px-8 py-2.5 mt-4 leading-5 text-white transition-colors duration-300 transform bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:bg-gray-600">Login</button>
+            </form>
+        </div>
+    </section>
+
+    <footer class="h-20 bg-white border-t border-gray-200">
+        <div class="container mx-auto flex items-center justify-between">
+            <p>&copy; 2025 Parfümerie Douglas GmbH & Co. KG.</p>
+        </div>        
+    </footer>
+
+    <script>
+        const user = localStorage.getItem('user');
+        const cart = localStorage.getItem('cart') !== null ? JSON.parse(localStorage.getItem('cart')) : [];
+
+        document.querySelector('#cart').textContent = cart.length
+
+        if(user !== null) {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'block'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'none'
+            }
+        } else {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'none'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'block'
+            }
+        }
+
+        //login 
+        const login_form = document.querySelector('#login-form')
+        const users = localStorage.getItem('users') == null ? [] : JSON.parse(localStorage.getItem('users'))
+
+        login_form.addEventListener('submit', event => {
+            event.preventDefault()
+
+            const fields = event.target.elements
+
+            const email = fields['email'].value
+            const password = fields['password'].value
+
+            if(users.filter(user => (user.email == email) && (user.password == password)).length > 0) {
+                localStorage.setItem('user', JSON.stringify({email: email}))
+                window.location.href = `http://127.0.0.1:5500/dashboard.html`
+            } else {
+                alert("Incorrect credentials")
+            }
+        })
+    </script>
+</body>
+</html>

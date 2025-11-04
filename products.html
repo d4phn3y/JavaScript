@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products | Douglas</title>
+    <link rel="stylesheet" href="./assets/css/output.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <header class="h-20 bg-white border-b border-gray-200">
+        <div class="container mx-auto h-20 flex justify-between items-center px-6">
+            <img src="./assets/images/logo.svg" alt="logo" class="h-10 w-auto">
+            <nav>
+                <ul class="flex gap-4 items-center">
+                    <li><a href="index.html" class="font-semibold font-sans text-green-400">Home</a></li>
+                    <li><a href="products.html" class="font-semibold font-sans text-green-400">Products</a></li>
+                    <li><a href="cart.html" class="font-semibold font-sans text-green-400">Cart (<span id="cart">0</span>)</a></li>
+                    <li data-visible="auth"><a href="dashboard.html"  class="font-semibold font-sans text-green-400">Dashboard</a></li>
+                    <li data-visible="guest"><a href="login.html"  class="font-semibold font-sans text-green-400">Login</a></li>
+                    <li data-visible="guest"><a href="register.html"  class="font-semibold font-sans text-green-400">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="py-6 bg-green-200">
+        <div class="container mx-auto flex justify-between items-center px-6">
+            <div class="flex items-center gap-4">
+                <input type="search" class="bg-white py-2 px-6 rounded-md" placeholder="Search by 'product' title" id="search" />
+                <a href="products.html" class="underline text-green-600"><i class="fa-solid fa-circle-xmark"></i>Clear</a>
+            </div>
+            <div class="flex items-center">
+                <select id="categories" class="bg-white py-2 px-6 rounded-md">
+                    <option value="">Filter by category</option>
+                </select>
+            </div>
+        </div>
+
+    </main>
+
+    <section class="py-12">
+        <div class="container mx-auto">
+            <div class="grid grid-cols-4 gap-6" id="items"></div>
+        </div>
+    </section>
+
+    <footer class="h-20 bg-white border-t border-gray-200">
+        <div class="container mx-auto flex items-center justify-between">
+            <p>&copy; 2025 Parfümerie Douglas GmbH & Co. KG.</p>
+        </div>        
+    </footer>
+
+    <script>
+        const user = localStorage.getItem('user');
+        const cart = localStorage.getItem('cart') !== null ? JSON.parse(localStorage.getItem('cart')) : [];
+
+        document.querySelector('#cart').textContent = cart.length
+
+        if(user !== null) {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'block'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'none'
+            }
+        } else {
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'none'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'block'
+            }
+        }
+
+
+        //tu i ba filter kategorite 
+        const $  = s => document.querySelector(s);
+        const $$ = s => document.querySelectorAll(s);
+
+        
+        $('#cart').textContent = JSON.parse(localStorage.getItem('cart') || '[]').length;
+        const authed = !!localStorage.getItem('user');
+        $$('[data-visible="auth"]').forEach(el  => el.hidden = !authed);
+        $$('[data-visible="guest"]').forEach(el => el.hidden =  authed);
+
+    
+        const CATS = [
+            { key: 'lipstick',   label: 'Lipstick'   },
+            { key: 'lip_liner',  label: 'Lip Liner'  },
+            { key: 'blush',      label: 'Blush'      },
+            { key: 'bronzer',    label: 'Bronzer'    },
+            { key: 'foundation', label: 'Foundation' },
+            { key: 'eyeliner',   label: 'Eyeliner'   },
+            { key: 'mascara',    label: 'Mascara'    }
+        ];
+
+        
+        const apiURL = (type, q='') =>
+            `https://makeup-api.herokuapp.com/api/v1/products.json?product_type=${encodeURIComponent(type)}${q ? `&product_name=${encodeURIComponent(q)}` : ''}`;
+
+        //me mush dropdown-in e kategorive te products.html
+        const catSel = $('#categories');
+        catSel.innerHTML =
+            `<option value="">Filter by category</option>` +
+            CATS.map(c =>
+            `<option value="${c.key}" data-url="${apiURL(c.key)}">${c.label}</option>`
+            ).join('');
+
+        const params = new URLSearchParams(location.search);
+        const search = $('#search');
+        const clear  = $('#clear'); 
+
+        //mbush input-in dhe dropdown-in me vlerat nga URL
+        if (params.get('q'))   search.value = params.get('q');
+        if (params.get('cat')) catSel.value = params.get('cat');
+
+        function applyFilters(){
+            const p = new URLSearchParams();
+            const q = search.value.trim(); //kqyr vleren qe na e kena shkru 
+            const c = catSel.value;
+            if (q) p.set('q', q);
+            if (c) p.set('cat', c);
+            location.search = p.toString();
+        }
+
+        search.addEventListener('keydown', e => e.key === 'Enter' && applyFilters());
+        catSel.addEventListener('change', applyFilters);
+        clear?.addEventListener('click', e => {
+            e.preventDefault();
+            search.value = '';
+            catSel.value = '';
+            applyFilters();
+        });
+
+        //pjesa me dal disa produkte
+
+        const ITEMS_EL = document.querySelector('#items');
+        const API = 'https://makeup-api.herokuapp.com/api/v1/products.json?brand=covergirl&product_type=lipstick';
+
+        ITEMS_EL.innerHTML = '<p class="text-gray-600">Loading…</p>';
+
+        fetch(API)
+            .then(r => r.json())
+            .then(list => {               
+            if (!Array.isArray(list) || list.length === 0) {
+                ITEMS_EL.innerHTML = '<p class="text-gray-600">S’u gjet asnjë produkt.</p>';
+                return;
+            }
+
+            const html = list.map(p => `
+                <a href="product.html?id=${p.id}" class="block bg-white p-4 rounded-xl border border-gray-200 hover:shadow transition">
+                <div class="aspect-square w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
+                    <img src="${p.image_link || ''}" alt="${p.name || ''}"
+                        class="w-full h-full object-contain"
+                        onerror="this.style.display='none'">
+                </div>
+                <div class="mt-3 font-semibold text-gray-800 line-clamp-2">${p.name || 'Untitled'}</div>
+                <div class="text-sm text-gray-500">
+                    ${(p.brand || 'Covergirl').toUpperCase()}${p.price ? ` • ${(p.price_sign || '$')}${p.price}` : ''}
+                </div>
+                </a>
+            `).join('');
+
+            //mbyll fetch-in dhe e kqyr suksesin ose gabimin
+            ITEMS_EL.innerHTML = html;
+            })
+            .catch(err => {
+            console.error(err);
+            ITEMS_EL.innerHTML = '<p class="text-red-600">S’po mundem me i marrë produktet.</p>';
+            });
+        
+
+            //kategorite nja ka nja
+            const resultsEl = document.getElementById('items');
+            const category_filter = document.getElementById('categories');
+
+            async function loadCategory(type) {
+                if (!type) return;
+                resultsEl.innerHTML = `<p class="text-center text-gray-500">Duke ngarkuar…</p>`;
+                try {
+                const url = `https://makeup-api.herokuapp.com/api/v1/products.json?product_type=${encodeURIComponent(type)}`;
+                const list = (typeof proxyJSON === 'function')
+                    ? await proxyJSON(url)                   // nëse e ke proxyJSON, përdore
+                    : await fetch(url).then(r => r.json());  // përndryshe fetch direkt
+
+                resultsEl.innerHTML = (Array.isArray(list) ? list : [])
+                    .filter(p => p.image_link) //Heq produktet qe skan foto
+                    .slice(0, 20) //mi morr veq 20
+                    .map(p => `
+                    <article class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div class="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden rounded-md">
+                            <img src="${p.image_link}"
+                                alt="${p.name || ''}"
+                                class="max-h-full max-w-full object-contain"
+                                loading="lazy"
+                                onerror="this.closest('article').remove()">
+                            </div>
+                        <div class="p-4">
+                        <h3 class="font-semibold text-gray-800">${p.name ?? 'Product'}</h3>
+                        <p class="mt-2 text-sm text-gray-600">${(p.description ?? '').slice(0, 120)}</p>
+                        <a href="product.html?id=${encodeURIComponent(p.id)}"
+                            class="inline-block mt-3 text-green-600 font-medium hover:underline">View</a>
+                        </div>
+                    </article>
+                    `).join('') || '<p class="text-center text-gray-500">S’u gjet asnjë produkt.</p>';
+
+                } catch (err) {
+                console.error(err);
+                resultsEl.innerHTML = `<p class="text-center text-red-600">S’po mundem me marrë produktet.</p>`;
+                }
+            }
+
+            
+            category_filter?.addEventListener('change', (e) => {
+                const type = e.target.value;
+                const params = new URLSearchParams(location.search);
+                if (type) params.set('cat', type); else params.delete('cat');
+                history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
+                loadCategory(type);
+            });
+
+            //e ban faqen me ia nis me filtrin qe vyn, nese URL ka parametra
+            (function bootFromURL(){ //IIFE
+                const initCat = new URLSearchParams(location.search).get('cat');
+                if (initCat) {
+                if (category_filter) category_filter.value = initCat;
+                loadCategory(initCat);
+                }
+            })();
+
+
+            //search apo kerkimi
+            const search_field   = document.getElementById('search');
+            const API_BASE = 'https://makeup-api.herokuapp.com/api/v1/products.json';
+
+            search_field.addEventListener('keydown', async (e) => {  
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+
+            const q   = search_field.value.trim();
+            const cat = category_filter?.value || '';
+
+            // helper per renderim (sikur te kartat e loadCategory)
+            const render = (list) => {
+                resultsEl.innerHTML = (Array.isArray(list) ? list : [])
+                .filter(p => p.image_link && p.image_link.trim().toLowerCase() !== 'null')
+                .slice(0, 12)
+                .map(p => `
+                    <article class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden rounded-md">
+                        <img src="${p.image_link}"
+                            alt="${p.name || ''}"
+                            class="max-h-full max-w-full object-contain"
+                            onerror="this.closest('article').remove()">
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-800">${p.name ?? 'Product'}</h3>
+                        <p class="mt-2 text-sm text-gray-600">${(p.description ?? '').slice(0, 120)}</p>
+                        <a href="product.html?id=${encodeURIComponent(p.id)}"
+                        class="inline-block mt-3 text-green-600 font-medium hover:underline">View</a>
+                    </div>
+                    </article>
+                `).join('') || '<p class="text-center text-gray-500">S’u gjet asnjë produkt.</p>';
+            };
+
+            resultsEl.innerHTML = '<p class="text-center text-gray-500">Duke ngarkuar…</p>';
+
+            try {
+                // Nese ska as query as kategori  kthehu te default-i (Covergirl + lipstick)
+                if (!q && !cat) {
+                const res = await fetch(`${API_BASE}?brand=covergirl&product_type=lipstick`);
+                render(await res.json());
+                return;
+                }
+
+                // Nderto URL sipas q + cat
+                const u = new URL(API_BASE);
+                if (q)   u.searchParams.set('product_name', q);
+                if (cat) u.searchParams.set('product_type', cat);
+
+                const res = await fetch(u.toString());
+                render(await res.json());
+            } catch (err) {
+                console.error(err);
+                resultsEl.innerHTML = '<p class="text-center text-red-600">S’po mundem me i marrë produktet.</p>';
+            }
+            });
+    </script>
+</body>
+</html>

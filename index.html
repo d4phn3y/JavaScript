@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home | Douglas</title>
+    <link rel="stylesheet" href="./assets/css/output.css">
+</head>
+<body>
+    <header class="h-20 bg-white border-b border-gray-200">
+        <div class="container mx-auto h-20 flex justify-between items-center px-4">
+            <img src="./assets/images/logo.svg" alt="logo" class="h-10 w-auto">
+            <nav>
+                <ul class="flex gap-4 items-center">
+                    <li><a href="index.html" class="font-semibold font-sans text-green-400">Home</a></li>
+                    <li><a href="products.html" class="font-semibold font-sans text-green-400">Products</a></li>
+                    <li><a href="cart.html" class="font-semibold font-sans text-green-400">Cart (<span id="cart">0</span>)</a></li>
+                    <li data-visible="auth"><a href="dashboard.html"  class="font-semibold font-sans text-green-400">Dashboard</a></li>
+                    <li data-visible="auth"><a href="" id="logout"  class="font-semibold font-sans text-green-400">Logout</a></li>
+                    <li data-visible="guest"><a href="login.html"  class="font-semibold font-sans text-green-400">Login</a></li>
+                    <li data-visible="guest"><a href="register.html"  class="font-semibold font-sans text-green-400">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="py-[120px] px-[100px] bg-linear-to-t from-lime-100 to-green-200">
+        <div class="container mx-auto grid grid-cols-3 gap-20" id="produkti">
+            
+        </div>
+    </main>
+
+    <section class="py-[20px]">
+        <div class="container mx-auto">
+            <h2 class="text-center font-semibold text-green-500 text-4xl mb-6">Categories</h2>
+
+            <div id="categories"
+                class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            </div>
+
+            <!-- Rezultatet e produkteve -->
+            <div id="cat-results" class="mt-8 grid gap-4"
+                style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));">
+            </div>
+        </div>
+        </section>
+
+    <footer class="h-20 bg-white border-t border-gray-200">
+        <div class="container mx-auto flex items-center justify-between">
+            <p>&copy; 2025 Parfümerie Douglas GmbH & Co. KG.</p>
+        </div>        
+    </footer>
+
+    <script>
+        const user = localStorage.getItem('user');  // nëse ekziston, nënkupton që dikush është i kyçur
+        const cart = localStorage.getItem('cart') !== null ? JSON.parse(localStorage.getItem('cart')) : [];
+
+        document.querySelector('#cart').textContent = cart.length
+
+        if(user !== null) { // shfaq auth links, mshef guest links
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'block'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'none'
+            }
+        } else { // mshef auth links, shfaq guest links
+            for(let auth_link of document.querySelectorAll('[data-visible="auth"]')) {
+                auth_link.style.display = 'none'
+            }
+            for(let guest_link of document.querySelectorAll('[data-visible="guest"]')) {
+                guest_link.style.display = 'block'
+            }
+        }
+
+        //cdo 3s: merr produkte lipstick, merre njanen random dhe e shfaq si hero
+        setInterval(() => {
+        const upstream = 'https://makeup-api.herokuapp.com/api/v1/products.json?product_category=lipstick';
+        const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(upstream);
+
+        fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const produkti = data[Math.floor(Math.random() * data.length)];
+            const container = document.querySelector('#produkti');
+            console.log(produkti.image_link)
+            if (!container || !produkti) return;
+            //check if product has an image
+            if (!produkti.image_link) return; 
+
+            //Render hero product      
+            container.innerHTML = `
+            <div class="col-span-3 grid grid-cols-3 gap-6 items-start">
+                <div>
+                <img src="${produkti.image_link}" alt="${produkti.name || ''}" class="w-full h-64 object-cover rounded-xl">
+                </div>
+                <div class="col-span-2">
+                <h1 class="text-2xl font-semibold">${produkti.name || 'Product'}</h1>
+                <p class="mt-2 text-gray-600 line-clamp-4">
+                    ${(produkti.description || '').slice(0, 200)}
+                </p>
+                <a href="product.html?id=${encodeURIComponent(produkti.id)}"
+                    class="w-[150px] transition-all duration-300 ease-in-out hover:scale-105 inline-block rounded-full mt-5 py-2 px-10 border border-green-600 text-green-600 text-xl font-bold">
+                    Details
+                </a>
+                </div>
+            </div>
+            `;
+        })
+        .catch(err => console.log(err));
+
+        }, 3000);
+
+
+        //kategorite 
+
+        (async () => {
+            const CATS = [
+                { key: 'lipstick',   label: 'Lipstick' },
+                { key: 'lip_liner',  label: 'Lip Liner' },
+                { key: 'blush',      label: 'Blush' },
+                { key: 'bronzer',    label: 'Bronzer' },
+                { key: 'foundation', label: 'Foundation' },
+                { key: 'eyeliner',   label: 'Eyeliner' },
+                { key: 'mascara',    label: 'Mascara' }
+            ];
+
+            const $ = s => document.querySelector(s);
+            const catsEl = $('#categories'), resultsEl = $('#cat-results');
+
+            //grid responsiv per kategorit
+            Object.assign(catsEl.style, {
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: catsEl.style.gap || '1rem'
+            });
+
+            //Funksion proxy: provon dy proxy dhe kthen JSON final
+            const proxyJSON = async u => {
+                for (const url of [
+                'https://corsproxy.io/?' + encodeURIComponent(u),
+                'https://api.allorigins.win/get?url=' + encodeURIComponent(u)
+                ]) {
+                try {
+                    const r = await fetch(url);
+                    //ternary operator
+                    if (!r.ok) continue;
+                    return url.includes('allorigins.win/get?')
+                    ? JSON.parse((await r.json()).contents)
+                    : await r.json();
+                } catch {}
+                }
+                throw new Error('CORS/proxy failed');
+            };
+
+            const okImg = (src, t = 3000) => new Promise(res => {
+                if (!src) return res(false);
+                const i = new Image(); let done = false;
+                const finish = v => { 
+                    if (!done) { 
+                        done = true; 
+                        res(v); 
+                    } 
+                };
+                i.onload = () => finish(true);
+                i.onerror = i.onabort = () => finish(false);
+                i.src = src;
+                setTimeout(() => finish(false), t);
+            });
+
+            const firstThumb = async type => {
+                const url = `https://makeup-api.herokuapp.com/api/v1/products.json?product_type=${encodeURIComponent(type)}`;
+                const list = await proxyJSON(url);
+                for (const p of (Array.isArray(list) ? list : []).filter(p => p?.image_link).slice(0, 20))
+                if (await okImg(p.image_link)) return p.image_link;
+                return '';
+            };
+
+            catsEl.innerHTML = CATS.map(c => `
+                <button type="button" data-type="${c.key}"
+                class="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow transition p-4 text-center w-full">
+                <div class="mx-auto rounded-xl overflow-hidden border border-gray-100 flex items-center justify-center"
+                    style="width:96px;height:96px;background:#f3f4f6">
+                    <img data-thumb="${c.key}" alt="${c.label}"
+                        style="max-width:100%;max-height:100%;object-fit:contain;display:none"/>
+                    <span class="thumb-fallback text-gray-500 text-sm">Duke ngarkuar…</span>
+                </div>
+                <div class="mt-3 font-semibold text-gray-800">${c.label}</div>
+                </button>
+            `).join('');
+
+            // preload në seri (që të mos ngarkohen proxy-t)
+            for (const { key, label } of CATS) {
+                try {
+                const src = await firstThumb(key);
+                const img = catsEl.querySelector(`img[data-thumb="${key}"]`);
+                const fb = img?.parentElement.querySelector('.thumb-fallback');
+                if (img && src) { img.src = src; img.style.display = 'block'; fb && fb.remove(); }
+                else if (fb) fb.textContent = label;
+                } catch {
+                const fb = catsEl.querySelector(`img[data-thumb="${key}"]`)?.parentElement.querySelector('.thumb-fallback');
+                if (fb) fb.textContent = label;
+                }
+            }
+            })();
+            
+            
+            //Logout
+            const logout_btn = document.querySelector('#logout')
+
+            logout_btn.addEventListener('click', event => {
+                event.preventDefault()
+                localStorage.removeItem('user')
+                alert("User is logged out now!")
+                window.location.href = 'http://127.0.0.1:5500/index.html'
+            })
+    </script>
+</body>
+</html>
